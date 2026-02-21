@@ -17,7 +17,7 @@ function parseJsonFromAI(rawText) {
   return JSON.parse(cleaned);
 }
 
-function getModel() {
+ function getModel() {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
   return new ChatGroq({
@@ -99,4 +99,4 @@ Return JSON only:
   return result;
 }
 
-module.exports = { scoreCandidate };
+module.exports = { scoreCandidate,getModel };

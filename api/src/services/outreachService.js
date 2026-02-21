@@ -2,19 +2,9 @@ const { ChatPromptTemplate } = require("@langchain/core/prompts");
 const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
 const Candidate = require("../models/Candidate");
 const Job = require("../models/Job");
+const { getModel } = require("./scoringService");
 
-function getModel() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not configured");
-  }
 
-  return new ChatGoogleGenerativeAI({
-    apiKey,
-    model: "gemini-1.5-flash-latest",
-    temperature: 0.5,
-  });
-}
 
 async function generateOutreachMessage(candidateId, jobId) {
   const [candidate, job] = await Promise.all([

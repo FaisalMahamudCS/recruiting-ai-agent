@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import ScoreDisplay from "../components/candidates/ScoreDisplay";
@@ -22,6 +22,14 @@ export default function CandidateDetailPage({ candidateId }) {
   const [activeTaskId, setActiveTaskId] = useState("");
   const { task, isPolling } = useTask(activeTaskId);
 
+  useEffect(() => {
+    if (!router.isReady) return;
+    const taskIdFromQuery = typeof router.query.taskId === "string" ? router.query.taskId : "";
+    if (taskIdFromQuery && taskIdFromQuery !== activeTaskId) {
+      setActiveTaskId(taskIdFromQuery);
+    }
+  }, [router.isReady, router.query.taskId, activeTaskId]);
+
   const actionError = useMemo(
     () =>
       scoreMutation.error?.response?.data?.error ||
@@ -32,16 +40,40 @@ export default function CandidateDetailPage({ candidateId }) {
 
   async function onScore() {
     const result = await scoreMutation.mutateAsync();
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: { ...router.query, taskId: result.taskId }
+      },
+      undefined,
+      { shallow: true }
+    );
     setActiveTaskId(result.taskId);
   }
 
   async function onOutreach() {
     const result = await outreachMutation.mutateAsync(jobId || candidate?.jobId);
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: { ...router.query, taskId: result.taskId }
+      },
+      undefined,
+      { shallow: true }
+    );
     setActiveTaskId(result.taskId);
   }
 
   async function onSimulateResponse() {
     const result = await responseMutation.mutateAsync(responseMessage);
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: { ...router.query, taskId: result.taskId }
+      },
+      undefined,
+      { shallow: true }
+    );
     setActiveTaskId(result.taskId);
     setShowResponseModal(false);
   }

@@ -12,7 +12,7 @@ export default function useTask(taskId) {
     setError("");
     setIsPolling(true);
 
-    const interval = setInterval(async () => {
+    const fetchTask = async () => {
       try {
         const res = await client.get(`/api/tasks/${taskId}`);
         if (!active) return;
@@ -27,9 +27,11 @@ export default function useTask(taskId) {
         if (!active) return;
         setError(err?.response?.data?.error || err.message || "Failed to poll task");
         setIsPolling(false);
-        clearInterval(interval);
       }
-    }, 3000);
+    };
+
+    fetchTask();
+    const interval = setInterval(fetchTask, 3000);
 
     return () => {
       active = false;
