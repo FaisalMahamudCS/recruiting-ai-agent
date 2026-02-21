@@ -11,8 +11,8 @@ function getModel() {
 
   return new ChatGoogleGenerativeAI({
     apiKey,
-    model: "gemini-1.5-flash",
-    temperature: 0.5
+    model: "gemini-1.5-flash-latest",
+    temperature: 0.5,
   });
 }
 
