@@ -1,0 +1,27 @@
+# ── Stage 1: deps ─────────────────────────────────────────────────────────────
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+# Copy only the manifests first (layer-cache friendly)
+COPY api/package*.json ./
+
+RUN npm ci --omit=dev
+
+# ── Stage 2: production image ──────────────────────────────────────────────────
+FROM node:20-alpine AS runner
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+# Copy production node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy application source
+COPY api/src ./src
+
+# Render injects PORT automatically; default to 3000 for local use
+EXPOSE 3000
+
+CMD ["node", "src/index.js"]

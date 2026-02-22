@@ -1,0 +1,104 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── 1. Lint & Validate ───────────────────────────────────────────────────────
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    env:
+      # Static / safe defaults for CI
+      PORT: 3000
+      NODE_ENV: test
+      REDIS_URL: redis://localhost:6379   # no real Redis in CI; override if you add a Redis service below
+
+      # Secrets — add these in GitHub → Settings → Secrets and variables → Actions
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}   # optional, not used with Gemini
+      SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+          cache-dependency-path: |
+            api/package-lock.json
+            worker/package-lock.json
+
+      - name: Install API dependencies
+        run: npm ci
+        working-directory: api
+
+      - name: Install Worker dependencies
+        run: npm ci
+        working-directory: worker
+
+      # Uncomment when you add a linter (e.g. eslint)
+      # - name: Lint API
+      #   run: npm run lint
+      #   working-directory: api
+
+      # Uncomment when you add tests (e.g. jest)
+      # - name: Test API
+      #   run: npm test
+      #   working-directory: api
+
+  # ── 2. Build Docker Images ───────────────────────────────────────────────────
+  docker-build:
+    name: Docker Build
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.backend
+          push: false
+          tags: recruiting-ai-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.worker
+          push: false
+          tags: recruiting-ai-worker:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── 3. Deploy to Render ──────────────────────────────────────────────────────
+  deploy-render:
+    name: Deploy to Render
+    needs: docker-build
+    runs-on: ubuntu-latest
+    # Only deploy on a push to main (not on pull_request events)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger Render Deploy
+        run: |
+          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+        # -f  → fail on HTTP errors
+        # -s  → silent (no progress meter)
+        # -S  → show errors even in silent mode

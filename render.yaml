@@ -1,0 +1,64 @@
+# render.yaml — Render Blueprint
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Services deployed:
+#   • api    — Express REST API  (Web Service, Docker)
+#   • worker — BullMQ worker     (Background Worker, Docker)
+#   • redis  — Managed Redis     (Redis instance from Render)
+
+services:
+  # ── API Web Service ──────────────────────────────────────────────────────────
+  - type: web
+    name: recruiting-ai-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .
+    region: oregon          # change to your preferred region
+    plan: free              # or "starter", "standard", etc.
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: MONGODB_URI
+        sync: false         # set manually in the Render dashboard
+      - key: REDIS_URL
+        fromService:
+          name: recruiting-ai-redis
+          type: redis
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SERPER_API_KEY
+        sync: false
+
+  # ── BullMQ Worker (Background Worker) ───────────────────────────────────────
+  - type: worker
+    name: recruiting-ai-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile.worker
+    dockerContext: .
+    region: oregon
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_URL
+        fromService:
+          name: recruiting-ai-redis
+          type: redis
+          property: connectionString
+      - key: MONGODB_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SERPER_API_KEY
+        sync: false
+
+# ── Managed Redis ────────────────────────────────────────────────────────────
+  - type: redis
+    name: recruiting-ai-redis
+    region: oregon
+    plan: free              # Render free Redis has a 25 MB limit
+    maxmemoryPolicy: noeviction
