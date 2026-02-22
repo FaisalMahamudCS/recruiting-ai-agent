@@ -1,7 +1,7 @@
-const Task = require("../../../api/src/models/Task");
 const Candidate = require("../../../api/src/models/Candidate");
 const Message = require("../../../api/src/models/Message");
 const { generateOutreachMessage } = require("../../../api/src/services/outreachService");
+const { redisDel } = require("../../../api/src/config/redis");
 
 async function processOutreachJob(job) {
   const { taskId, candidateId, jobId } = job.data;
@@ -32,6 +32,7 @@ async function processOutreachJob(job) {
     });
 
     await Candidate.findByIdAndUpdate(candidateId, { status: "outreached" });
+    await redisDel(`candidates:${jobId}`);
 
     const result = {
       messageId: message._id,

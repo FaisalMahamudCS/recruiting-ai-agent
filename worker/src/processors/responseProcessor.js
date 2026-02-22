@@ -1,6 +1,7 @@
 const Task = require("../../../api/src/models/Task");
 const Candidate = require("../../../api/src/models/Candidate");
 const { classifyIntent } = require("../../../api/src/services/responseService");
+const { redisDel } = require("../../../api/src/config/redis");
 
 async function processResponseJob(job) {
   const { taskId, candidateId, message } = job.data;
@@ -15,9 +16,15 @@ async function processResponseJob(job) {
   try {
     const classification = await classifyIntent(message);
 
-    await Candidate.findByIdAndUpdate(candidateId, {
-      status: classification.intent
-    });
+    const updatedCandidate = await Candidate.findByIdAndUpdate(
+      candidateId,
+      { status: classification.intent },
+      { new: true }
+    );
+
+    if (updatedCandidate && updatedCandidate.jobId) {
+      await redisDel(`candidates:${updatedCandidate.jobId}`);
+    }
 
     const result = {
       intent: classification.intent,
