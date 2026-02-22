@@ -62,3 +62,4 @@ services:
     region: oregon
     plan: free              # Render free Redis has a 25 MB limit
     maxmemoryPolicy: noeviction
+    ipAllowList: []         # empty = only internal private network access
