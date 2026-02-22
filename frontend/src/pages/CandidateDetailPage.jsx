@@ -34,6 +34,7 @@ export default function CandidateDetailPage({ candidateId }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    console.log("task status", task?.status);
     if (task?.status === "completed") {
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     }

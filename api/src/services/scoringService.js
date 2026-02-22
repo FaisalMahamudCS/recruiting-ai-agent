@@ -2,7 +2,7 @@ const { ChatPromptTemplate } = require("@langchain/core/prompts");
 const { ChatGroq } = require("@langchain/groq");
 const Candidate = require("../models/Candidate");
 const Job = require("../models/Job");
-const { redisGet, redisSet } = require("../config/redis");
+const { redisGet, redisSet, redisDel } = require("../config/redis");
 
 function parseJsonFromAI(rawText) {
   if (!rawText) throw new Error("Empty AI response");
@@ -95,6 +95,7 @@ Return JSON only:
   await candidate.save();
 
   await redisSet(cacheKey, JSON.stringify(result), 86400);
+  await redisDel(`candidates:${jobId}`);
 
   return result;
 }
