@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import ScoreDisplay from "../components/candidates/ScoreDisplay";
@@ -29,6 +30,14 @@ export default function CandidateDetailPage({ candidateId }) {
       setActiveTaskId(taskIdFromQuery);
     }
   }, [router.isReady, router.query.taskId, activeTaskId]);
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (task?.status === "completed") {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    }
+  }, [task?.status, queryClient]);
 
   const actionError = useMemo(
     () =>
