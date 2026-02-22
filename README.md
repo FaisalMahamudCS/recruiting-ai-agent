@@ -164,12 +164,24 @@ Response standards:
 
 Task failures are written to `Task.error` and `Task.status=failed`. Worker errors do not crash process-level execution.
 
-## Production Improvements
+## Scalability & Production Readiness
 
-- Add auth + role-based access control.
-- Add request validation (Joi/Zod) and rate limiting.
-- Add dead-letter queues and alerting.
-- Add structured logging and tracing (OpenTelemetry).
-- Add unit/integration/e2e tests and CI.
-- Add idempotency keys for task creation endpoints.
-- Add richer candidate profile extraction pipeline and contact enrichment.
+While the current architecture leverages BullMQ and Redis for async orchestration, taking this system to production requires hardening and elastic scalability:
+
+### Infrastructure & Scaling
+- **Container Orchestration**: Migrate from monolithic Docker deployments to **Kubernetes (K8s)** or **AWS ECS/EKS** to manage the API and Worker pods independently.
+- **Elastic Auto-Scaling**: Implement **AWS Auto Scaling** (or HPA in Kubernetes) bound to BullMQ queue depth (e.g., using KEDA). This allows worker nodes to scale out dynamically during massive sourcing or scoring batch runs, and scale in during idle periods.
+
+### AI & LLM Optimization
+- **Prompt Caching & Cost Reduction**: Integrate **LMCache** (or similar KV-cache sharing systems) to drastically reduce latency and inference costs when evaluating hundreds of candidates against the same job description context.
+- **RAG Pipeline Enhancements**: Upgrade the candidate evaluation flow with a robust Retrieval-Augmented Generation (RAG) architecture. Implement vector embeddings (e.g., Pinecone/Qdrant) for resume/profile data to retrieve semantic matches against job requirements rather than relying on full context window ingestion per evaluation.
+
+### Core Features & Integrations
+- **Direct Outreach Integration**: Transition from generating outreach drafts to autonomous execution. Integrate with ESPs (e.g., SendGrid, AWS SES) or LinkedIn APIs to send campaigns directly, utilizing webhooks for delivery/open/click tracking.
+- **Contact Enrichment Pipeline**: Implement a waterfall enrichment strategy (e.g., Apollo, Clearbit, ZoomInfo) prior to outreach to maximize deliverability.
+
+### Reliability & Observability
+- **Resilience**: Implement Dead Letter Queues (DLQ) with automated retry backoffs and alerting (PagerDuty/Slack) for poisoned tasks.
+- **Observability**: Add distributed tracing (OpenTelemetry) and structured logging (pino/ELK stack) to track candidate lifecycles across microservices.
+- **API Hardening**: Introduce strict schema validation (Zod), rate limiting, and idempotency keys to prevent duplicate task execution.
+- **Security**: Integrate comprehensive AuthN/AuthZ (e.g., OAuth2, RBAC) for multi-tenant recruiter isolation.
