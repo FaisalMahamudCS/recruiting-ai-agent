@@ -1,3 +1,4 @@
+const Task = require("../../../api/src/models/Task");
 const Candidate = require("../../../api/src/models/Candidate");
 const Message = require("../../../api/src/models/Message");
 const { generateOutreachMessage } = require("../../../api/src/services/outreachService");
