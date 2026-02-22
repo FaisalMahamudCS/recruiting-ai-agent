@@ -2,9 +2,9 @@ const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
 const { Worker } = require("bullmq");
-const { connectDB } = require("../../api/src/config/db");
-const { initRedis } = require("../../api/src/config/redis");
-const { connection } = require("../../api/src/queues/queueManager");
+const { connectDB } = require("../api/src/config/db");
+const { initRedis } = require("../api/src/config/redis");
+const { connection } = require("../api/src/queues/queueManager");
 
 const { processSourcingJob } = require("./processors/sourcingProcessor");
 const { processScoringJob } = require("./processors/scoringProcessor");

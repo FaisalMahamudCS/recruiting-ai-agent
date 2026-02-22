@@ -2,19 +2,21 @@
 # Docs: https://render.com/docs/blueprint-spec
 #
 # Services deployed:
-#   • api    — Express REST API  (Web Service, Docker)
-#   • worker — BullMQ worker     (Background Worker, Docker)
-#   • redis  — Managed Redis     (Redis instance from Render)
+#   • api+worker — Express API + BullMQ worker (combined, Web Service, Docker)
+#   • redis      — Managed Redis (Redis instance from Render)
+#
+# NOTE: Render free plan does not support type:worker.
+# The BullMQ worker runs inside the same container as the API via concurrently.
 
 services:
-  # ── API Web Service ──────────────────────────────────────────────────────────
+  # ── API + Worker Web Service ──────────────────────────────────────────────────
   - type: web
-    name: recruiting-ai-api
+    name: recruiting-ai-agent
     runtime: docker
-    dockerfilePath: ./Dockerfile.backend
+    dockerfilePath: ./Dockerfile        # combined API + worker image
     dockerContext: .
-    region: oregon          # change to your preferred region
-    plan: free              # or "starter", "standard", etc.
+    region: oregon
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -34,35 +36,8 @@ services:
         sync: false         # optional; not used when using Gemini
       - key: SERPER_API_KEY
         sync: false
-      - key: GROQ_API_KEY
-        sync: false
 
-  # ── BullMQ Worker (Background Worker) ───────────────────────────────────────
-  - type: worker
-    name: recruiting-ai-worker
-    runtime: docker
-    dockerfilePath: ./Dockerfile.worker
-    dockerContext: .
-    region: oregon
-    plan: free
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: REDIS_URL
-        fromService:
-          name: recruiting-ai-redis
-          type: redis
-          property: connectionString
-      - key: MONGODB_URI
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false         # optional; not used when using Gemini
-      - key: SERPER_API_KEY
-        sync: false
-
-# ── Managed Redis ────────────────────────────────────────────────────────────
+# ── Managed Redis ─────────────────────────────────────────────────────────────
   - type: redis
     name: recruiting-ai-redis
     region: oregon
